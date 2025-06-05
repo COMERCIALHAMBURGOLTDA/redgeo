@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Estaciones Sísmicas de Chile</title>
+
+  <!-- Leaflet CSS con SRI corregido -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCFp9T/mZiYoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Leaflet JS con SRI corregido -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // Inicializo el mapa centrado en Chile
+    const map = L.map('map').setView([-33.5, -70.7], 5);
+
+    // Capa base de OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contribuyentes',
+      maxZoom: 18
+    }).addTo(map);
+
+    // Función para obtener y mostrar las estaciones sísmicas (red "CI")
+    async function cargarEstacionesChile() {
+      try {
+        const url =
+          'https://service.iris.edu/irisws/station/1/query?net=CI&level=station&format=JSON&nodata=404';
+        const respuesta = await fetch(url);
+        if (!respuesta.ok) {
+          throw new Error(`Error al obtener datos: ${respuesta.status}`);
+        }
+        const datos = await respuesta.json();
+
+        const redes = datos.networks;
+        if (!redes || redes.length === 0) {
+          throw new Error('No se encontraron redes en los datos recibidos.');
+        }
+
+        const estaciones = redes[0].stations;
+        estaciones.forEach((est) => {
+          const lat = est.latitude;
+          const lon = est.longitude;
+          const nombre = est.code;
+          const desc = est.description || '';
+
+          // Marcador estándar de Leaflet
+          L.marker([lat, lon])
+            .addTo(map)
+            .bindPopup(
+              `<b>Estación:</b> ${nombre}<br>
+               <b>Latitud:</b> ${lat.toFixed(3)}<br>
+               <b>Longitud:</b> ${lon.toFixed(3)}<br>
+               ${desc ? `<b>Descripción:</b> ${desc}` : ''}`
+            );
+        });
+      } catch (error) {
+        console.error(error);
+        alert(
+          'Ocurrió un error al cargar las estaciones sísmicas. Revisa la consola para más detalles.'
+        );
+      }
+    }
+
+    cargarEstacionesChile();
+  </script>
+</body>
+</html>
